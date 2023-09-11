@@ -28,11 +28,10 @@ pipeline {
             steps {
                 dir("${env.WORKSPACE}/terraform_module") {
                     sh """
-                    aws ecr get-login-password --region \${AWS_REGION} | docker login --username AWS --password-stdin \${AWS_ACCOUNT_ID}.dkr.ecr.\${AWS_REGION}.amazonaws.com
+                    terraform init && 
+                    terraform state pull ${env.STATE_FILE_URL} &&
                     docker --version && 
                     cd ../frontend/; npm install &&
-                    terraform --version &&
-                    terraform state pull ${STATE_FILE_URL} &&
                     echo "${env.WORKSPACE}"
                     """
                 }
@@ -42,7 +41,10 @@ pipeline {
         stage("SET VARIABLE AND ECR LOGIN") {
             steps {
                 sh """                    
-                    sleep 8;
+                    ECR_REPOSITORY_URL=\$(terraform output -raw ECR_REPOSITORY_URL);
+                    MAIN_BUCKET_NAME=\$(terraform output -raw MAIN_BUCKET_NAME);
+                    DISTRIBUTION_ID=\$(terraform output -raw DISTRIBUTION_ID);
+                    aws ecr get-login-password --region \${AWS_REGION} | docker login --username AWS --password-stdin \${AWS_ACCOUNT_ID}.dkr.ecr.\${AWS_REGION}.amazonaws.com
                 """
             }
         }
@@ -121,7 +123,7 @@ pipeline {
             post {
                 success {
                     echo "FRONTEND CODE DEPLOYED SUCCESSFULLY"
-                    //sh "aws cloudfront create-invalidation --distribution-id ${DISTRIBUTION_ID} --paths '/*'" // cloudfront distribution ID로 변환 & slack API 추가.
+                    sh "aws cloudfront create-invalidation --distribution-id YOUR_DISTRIBUTION_ID --paths '/*'" // cloudfront distribution ID로 변환 & slack API 추가.
                     slackSend (
                         channel: '#heungbot_pipeline', 
                         color: '#00FF00',
