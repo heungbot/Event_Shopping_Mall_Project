@@ -1,0 +1,419 @@
+// INFRA PIPELINE
+
+// 1. NETWORK & SG
+// 2. FRONTEND(S3 + CloudFront + ALB)
+// 3. Cache 
+// 4. Aurora
+
+pipeline { 
+    agent any
+    environment {
+
+        AWS_REGION = "ap-northeast-2"
+        AWS_ACCOUNT_ID = credentials("AWS_ACCOUNT_ID")
+        AWS_CONFIG = credentials("AWS_CREDENTIALS")
+        ECR_REPO_NAME = "heungbot_pipeline"
+        BACKEND_IMAGE_NAME = "backend"
+        GIT_REPOSITORY_URL = "https://github.com/heungbot/jenkins-terraform-pipeline.git"
+        TARGET_BRANCH = "main"
+    }
+    
+    
+    stages {
+        /// INIT ///
+        stage('CLONE PROJECT FROM GITHUB') {
+            steps {
+                git url: "${GIT_REPOSITORY_URL}",
+                    branch: "${TARGET_BRANCH}"
+                sh "ls -al && pwd"
+            }
+        }
+        
+        stage("INITIALIZING DAEMON & TERRAFORM") {
+            steps {
+                dir("${env.WORKSPACE}/terraform_module") {
+                    sh """
+                    aws --version &&
+                    terraform --version &&
+                    echo "${env.WORKSPACE}" &&
+                    cd ../terraform_module && terraform init
+                    """
+                }
+            }
+        }
+
+        /// for network(VPC & SG) /// 
+        stage ('PLAN NETWORK AND SG') {
+            steps {
+                dir("${env.WORKSPACE}/terraform_module") {
+                    sh """
+                    terraform plan --target=module.heungbot-base --target=module.heungbot-sg --target=module.heungbot-ecr \
+                    -var "BUILD_NUMBER=${env.BUILD_NUMBER}" \
+                    -var "BACKEND_IMAGE=NO" \
+                    -var JENKINS_WORKSPACE_PATH=${env.WORKSPACE}
+                    """
+                }
+            }
+            post {
+                success {
+                    echo 'BASE & SG MODULE PLAN SUCCESS'
+                    slackSend (
+                        channel: '#heungbot_pipeline', 
+                        color: '#00FF00',
+                        message: """
+                        NETWORK AND SG TERRAFORM PLAN SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+                failure {
+                    echo "FAILED TERRAFORM PLAN"
+                    slackSend (
+                        channel: '#heungbot_pipeline', 
+                        color: '#FF0000', 
+                        message: """
+                        NETWORK AND SG TERRAFORM PLAN FAILED
+                        CHECK JENKINS LOGS
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+
+                }
+            }
+        }
+
+        stage ('APPLY ABOUT NETWORK AND SG') {
+            steps {
+                dir("${env.WORKSPACE}/terraform_module") {
+                    sh """
+                    terraform apply -auto-approve --target=module.heungbot-base --target=module.heungbot-sg --target=module.heungbot-ecr \
+                    -var "BUILD_NUMBER=${env.BUILD_NUMBER}" \
+                    -var "BACKEND_IMAGE=NO" \
+                    -var "JENKINS_WORKSPACE_PATH=${env.WORKSPACE}"
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "TERRAFORM APPLY ABOUT NETWORK AND SG IS SUCCESS"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#00FF00',
+                        message: """ 
+                        NETWORK AND SG APPLY SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+                failure {
+                    echo "TERRAFORM APPLY ABOUT NETWORK AND SG IS FAILED"
+                    slackSend (
+                        channel: '#heungbot_pipeline', 
+                        color: '#FF0000', 
+                        message: """
+                        NETWORK AND SG APPLY FAILED
+                        CHECK JENKINS LOGS
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+            }
+        }  
+
+        /// FRONTEND ///
+
+        stage('PLAN ABOUT FRONTEND(S3, ALB, CF, OAC)') { // aurora endpoint backend image build 전에 넘겨줌
+            steps {
+                dir("${env.WORKSPACE}/terraform_module") {
+                    sh """
+                    terraform plan --target=module.heungbot-frontend-s3 --target=module.heungbot-frontend-cloudfront --target=module.heungbot-frontend-alb \
+                    -var "BUILD_NUMBER=${env.BUILD_NUMBER}" \
+                    -var "BACKEND_IMAGE=NO" \
+                    -var "JENKINS_WORKSPACE_PATH=${env.WORKSPACE}"
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "TERRAFORM PLAN ABOUT FRONTEND(CLOUDFRONT S3 ALB OAC) IS SUCCESS"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#00FF00',
+                        message: """ 
+                        FRONTEND(CF + ALB + S3) INFRA TERRAFORM PLAN SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+                failure {
+                    echo "TERRAFORM PLAN ABOUT FRONTEND(CLOUDFRONT S3 ALB OAC) IS FAILED"
+                    slackSend (
+                        channel: '#heungbot_pipeline', 
+                        color: '#FF0000', 
+                        message: """
+                        FRONTEND(CF + ALB + S3) INFRA TERRAFORM PLAN FAILED
+                        CHECK JENKINS LOGS
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+            }
+        }
+
+        stage('APPLY ABOUT FRONTEND(S3, ALB, CF, OAC)') { // aurora endpoint backend image build 전에 넘겨줌
+            steps {
+                dir("${env.WORKSPACE}/terraform_module") {
+                    sh """
+                    terraform apply -auto-approve --target=module.heungbot-frontend-s3 --target=module.heungbot-frontend-cloudfront --target=module.heungbot-frontend-alb \
+                    -var "BUILD_NUMBER=${env.BUILD_NUMBER}" \
+                    -var "BACKEND_IMAGE=NO" \
+                    -var "JENKINS_WORKSPACE_PATH=${env.WORKSPACE}"
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "TERRAFORM APPLY ABOUT FRONTEND(CLOUDFRONT S3 ALB OAC) IS SUCCESS"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#00FF00',
+                        message: """ 
+                        FRONTEND(CF + ALB + S3) INFRA TERRAFORM APPLY SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+                failure {
+                    echo "TERRAFORM APPLY ABOUT FRONTEND(CLOUDFRONT S3 ALB OAC) IS FAILED"
+                    slackSend (
+                        channel: '#heungbot_pipeline', 
+                        color: '#FF0000', 
+                        message: """
+                        FRONTEND(CF + ALB + S3) INFRA TERRAFORM APPLY FAILED
+                        CHECK JENKINS LOGS
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+            }
+        }
+
+
+        /// CACHE /// 
+        stage('PLAN ABOUT CACHE AND BASTION') { // aurora endpoint backend image build 전에 넘겨줌
+            steps {
+                dir("${env.WORKSPACE}/terraform_module") {
+                    sh """
+                    terraform plan --target=module.heungbot-bastion --target=module.heungbot-cache \
+                    -var "BUILD_NUMBER=${env.BUILD_NUMBER}" \
+                    -var "BACKEND_IMAGE=NO" \
+                    -var "JENKINS_WORKSPACE_PATH=${env.WORKSPACE}"
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "TERRAFORM PLAN ABOUT CACHE AND BASTION IS SUCCESS"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#00FF00',
+                        message: """ 
+                        CACHE AND BASTION TERRAFORM PLAN SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+                failure {
+                    echo "TERRAFORM PLAN ABOUT CACHE AND BASTION IS FAILED"
+                    slackSend (
+                        channel: '#heungbot_pipeline', 
+                        color: '#FF0000', 
+                        message: """
+                        CACHE AND BASTION TERRAFORM PLAN FAILED
+                        CHECK JENKINS LOGS
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+            }
+        }
+
+        stage('APPLY ABOUT CACHE AND BASTION') { // aurora endpoint backend image build 전에 넘겨줌
+            steps {
+                dir("${env.WORKSPACE}/terraform_module") {
+                    sh """
+                    terraform apply -auto-approve --target=module.heungbot-bastion --target=module.heungbot-cache \
+                    -var "BUILD_NUMBER=${env.BUILD_NUMBER}" \
+                    -var "BACKEND_IMAGE=NO" \
+                    -var "JENKINS_WORKSPACE_PATH=${env.WORKSPACE}"
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "TERRAFORM APPLY ABOUT CACHE AND BASTION IS SUCCESS"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#00FF00',
+                        message: """ 
+                        CACHE AND BASTION TERRAFORM APPLY SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+                failure {
+                    echo "TERRAFORM APPLY ABOUT CACHE AND BASTION IS FAILED"
+                    slackSend (
+                        channel: '#heungbot_pipeline', 
+                        color: '#FF0000', 
+                        message: """
+                        CACHE AND BASTION TERRAFORM APPLY FAILED
+                        CHECK JENKINS LOGS
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+            }
+        }
+
+
+        /// AURORA /// 
+        stage('PLAN ABOUT AURORA') { // aurora endpoint backend image build 전에 넘겨줌
+            steps {
+                dir("${env.WORKSPACE}/terraform_module") {
+                    sh """
+                    terraform plan --target=module.heungbot-aurora \
+                    -var "BUILD_NUMBER=${env.BUILD_NUMBER}" \
+                    -var "BACKEND_IMAGE=NO" \
+                    -var "JENKINS_WORKSPACE_PATH=${env.WORKSPACE}"
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "TERRAFORM PLAN ABOUT AURORA IS SUCCESS"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#00FF00',
+                        message: """ 
+                        AURORA TERRAFORM PLAN SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+                failure {
+                    echo "TERRAFORM PLAN ABOUT AURORA IS FAILED"
+                    slackSend (
+                        channel: '#heungbot_pipeline', 
+                        color: '#FF0000', 
+                        message: """
+                        AURORA TERRAFORM PLAN FAILED
+                        CHECK JENKINS LOGS
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+            }
+        }
+
+        stage('APPLY ABOUT AURORA') { // aurora endpoint backend image build 전에 넘겨줌
+            steps {
+                dir("${env.WORKSPACE}/terraform_module") {
+                    sh """
+                    terraform apply -auto-approve --target=module.heungbot-aurora \
+                    -var "BUILD_NUMBER=${env.BUILD_NUMBER}" \
+                    -var "BACKEND_IMAGE=NO" \
+                    -var "JENKINS_WORKSPACE_PATH=${env.WORKSPACE}"
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "TERRAFORM APPLY ABOUT AURORA IS SUCCESS"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#00FF00',
+                        message: """ 
+                        AURORA TERRAFORM APPLY SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+                failure {
+                    echo "TERRAFORM APPLY ABOUT AURORA IS FAILED"
+                    slackSend (
+                        channel: '#heungbot_pipeline', 
+                        color: '#FF0000', 
+                        message: """
+                        AURORA TERRAFORM APPLY FAILED
+                        CHECK JENKINS LOGS
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+            }
+        }
+
+        stage ('CLEAN UP') {
+            steps {
+                cleanWs()
+            }
+        }
+    }
+}
+
+
+
+
+        // stage('SSH transfer') {
+        //     steps {
+        //         script {
+        //         sshPublisher(
+        //         continueOnError: false, failOnError: true,
+        //         publishers: [
+        //             sshPublisherDesc(
+        //             configName: "${env.ANSIBLE_CONFIG_NAME}",
+        //             verbose: true,
+        //             transfers: [
+        //             sshTransfer(
+        //             sourceFiles: "$PATH_TO_FILE/$FILE_NAME",
+        //             removePrefix: "$PATH_TO_FILE",
+        //             remoteDirectory: "$REMOTE_DIR_PATH",
+
+        //             // execCommand: "echo 'hello' > ansible.txt "ansible.txt = ansible server의 ansadmin's home dir 복사됨. 
+        //             // BUT webapp.war file = REMOTE_DIR_PATH에 잘 복사됨.
+        //             // Jenkins Server에서 Ansible server로 artifact 파일을 복사했기 때문에, ansible-server에서도 $BUILD_NUMBER 라는 parameter를 사용할 수 있음.
+
+        //             // 또한 hub.docker.com push 하는 것 보다, ECR로 push하자. ansible-server의 적절한 권한 주는 것도 잊지 말자.
+        //             execCommand: '''ansible-playbook /opt/docker/playbook/image_manage_playbook.yml; \
+        //                             sleep 3; \
+        //                             ansible-playbook /opt/docker/playbook/image_deploy_playbook.yml; \
+        //                             sleep 3; '''
+        //                     )
+        //                 ])
+        //             ])
+        //         }
+        //     }
+            
+        //     post {
+        //         success {
+        //             echo "SUCCESS SSH transfer stage"
+        //             slackSend(
+        //                 channel: "#heungbot_pipeline",
+        //                 color: "#00FF00",
+        //                 message: """ 
+        //                 SUCCESS: Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+        //                 [TEST URL: http://${WEBAPP_PUBLIC_IP}:8100]
+        //                 """
+        //             )
+        //         }
+        //         failure {
+        //             echo "FAIL WRITE CONFIG AGAIN"
+        //             slackSend (
+        //                 channel: "#heungbot_pipeline", 
+        //                 color: "#FF0000", 
+        //                 message: "FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
+        //             )
+        //         }
+        //     }
+        // }
