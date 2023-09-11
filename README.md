@@ -259,7 +259,7 @@
 
 #### Infra Pipeline Slack Alarm
 
-<img width="999" alt="INFRA_PIPELINE_RESULT" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/ae012332-b31a-4614-a8bf-e2d6ff5f5171">
+<img width="543" alt="INFRA_SLACK_ALARM" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/ff1ac83d-4530-4395-8de1-3a8caaaba283">
 
 #### Dev Pipeline Slack Alarm
 
