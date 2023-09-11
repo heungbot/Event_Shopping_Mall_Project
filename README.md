@@ -24,7 +24,7 @@
 
 [05. 아키텍처 세부 구성 소개 ](#-05-핵심-서비스-소개-)
 
-[06. Jenkins Pipeline 실행 및 구현 ](#-06-jenkins-pipeline-실행-및-구현-)
+[06. Jenkins Pipeline 실행 및 결과 ](#-06-jenkins-pipeline-실행-및-결과-)
 
 ***
 
@@ -243,7 +243,7 @@
 
 ***
 
-## [ 06 Jenkins Pipeline 실행 및 구현 ]
+## [ 06 Jenkins Pipeline 실행 및 결과 ]
 
 ### Pipeline For Cloud Infra
 
