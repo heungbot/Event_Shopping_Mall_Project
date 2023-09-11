@@ -244,9 +244,28 @@
 ***
 
 ## [ 06 Jenkins Pipeline 실행 및 구현 ]
-<img width="1205" alt="3tier_pipeline_result" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline/assets/97264115/bea3062a-9ac0-4c93-bc22-dbf29c80b406">
+
+### Pipeline For Cloud Infra
+
+<img width="999" alt="INFRA_PIPELINE_RESULT" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/3590a54c-3ffa-471f-af0d-f265b5476d56">
+
+### Pipeline For Dev
+
+<img width="1045" alt="DEV_PIPELINE_RESULT" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/49e51183-ea2d-486a-8dee-2d89fd786d0f">
 
 * 모든 Stage가 정상적으로 수행되었으며, 생성된 서비스들은 AWS Console에서 확인 가능
+
+### SLACK ALARM
+
+#### Infra Pipeline Slack Alarm
+
+<img width="999" alt="INFRA_PIPELINE_RESULT" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/ae012332-b31a-4614-a8bf-e2d6ff5f5171">
+
+#### Dev Pipeline Slack Alarm
+
+<img width="291" alt="DEV_SLACK_ALARM" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/a5a668a9-ed96-4f53-9ad5-2876c9a5cdbc">
+
+* 중요 stage에 대한 알람이 정상적으로 slack channel에 전송되었음
 
 
 ### 1. Network
@@ -299,6 +318,4 @@
 
 * 모든 terraform module이 정상적으로 배포되었음
 
-<img width="948" alt="스크린샷 2023-08-11 오후 12 27 48" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline/assets/97264115/57d85f0c-c2f2-48df-a927-52a035acf95d">
 
-* 중요 stage에 대한 알람이 정상적으로 slack channel에 전송되었음
