@@ -1,0 +1,41 @@
+# dockerfile.prod 에는 build & 최적화된 java script 파일을 제공하는 웹 서버를 만드는데 필요한 모든 명령이 있음. 
+# 이러한 파일을 생성하기 위해 'npm run build' 실행할 필요는 없지만, 파일을 제공하는 자체 서버를 가져와야 함. 
+# 즉 Package.json의 build를 하면 서버를 얻지 못하고, start는 서버를 가져오지만 최적화되지 않은 개발 서버일 뿐이다. 
+# 그럼에도 불구하고 모든 것을 build 해보자. 
+FROM node:14-alpine as build 
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+# 기존의 dockerfile과 마지막 2단계가 다름. 
+# 여기서 Service를 시작하지 않기 때문에 port 노출 필요 없음. 대신 build script 실행하고자 함. 
+# EXPOSE 3000
+
+# build script 실행. npm start와 형태가 다른것은 그냥 package.json & npm이 작동하는 방식임. 
+# start script는 사실상 npm start 만으로도 실행 시킬 수 있는 특수 script. 다른 script는 npm run 명령으로 실행해야 함. 
+# RUN npm run build : 최종 제공 가능한 파일을 보관하는 build folder를 생성함. 
+RUN npm run build 
+# 자, 이제 최적화된 코드는 얻었다. 이제 서버만 있으면 됨!!
+# -> 이를 위해 multi-stage build 
+
+# 여기 까지가 stage 1 이라고 생각. 
+
+# npm run build를 통해 최적화된 Code를 얻었으니 이제 base Image인 node는 필요가 없음. 다른 image가 필요함. 
+FROM nginx:stable-alpine
+
+# build stage에서 최종 콘텐츠를 nginx의 특정 폴더에 복사하겠다. dockerhub nginx 참조. 
+COPY --from=build /app/build /usr/share/nginx/html
+
+EXPOSE 80
+
+# dockerhub nginx 참조. 
+CMD ["nginx", "-g", "daemon off;"]
+
+
+
+
+

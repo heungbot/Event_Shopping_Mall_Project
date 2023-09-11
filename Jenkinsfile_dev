@@ -1,0 +1,310 @@
+// DEV PIPELINE
+// TEST - BUILD - (PUSH) - DEPLOY
+
+
+pipeline { 
+    agent any
+    environment {
+
+        AWS_REGION = "ap-northeast-2"
+        AWS_ACCOUNT_ID = credentials("AWS_ACCOUNT_ID")
+        AWS_CONFIG = credentials("AWS_CREDENTIALS")
+        ECR_REPO_NAME = "heungbot_pipeline"
+        BACKEND_IMAGE_NAME = "backend"
+        GIT_REPOSITORY_URL = "https://github.com/heungbot/jenkins-terraform-pipeline.git"
+        TARGET_BRANCH = "main"
+    }
+    
+    stages {
+        stage('CLONE PROJECT FROM GITHUB') {
+            steps {
+                git url: "${GIT_REPOSITORY_URL}",
+                    branch: "${TARGET_BRANCH}"
+                sh "ls -al && pwd"
+            }
+        }
+
+        stage("INITIALIZING DAEMON & TERRAFORM") {
+            steps {
+                dir("${env.WORKSPACE}/terraform_module") {
+                    sh """
+                    aws ecr get-login-password --region \${AWS_REGION} | docker login --username AWS --password-stdin \${AWS_ACCOUNT_ID}.dkr.ecr.\${AWS_REGION}.amazonaws.com
+                    docker --version && 
+                    cd ../frontend/; npm install &&
+                    terraform --version &&
+                    terraform state pull ${STATE_FILE_URL} &&
+                    echo "${env.WORKSPACE}"
+                    """
+                }
+            }
+        }
+        
+        stage("SET VARIABLE AND ECR LOGIN") {
+            steps {
+                sh """                    
+                    sleep 8;
+                """
+            }
+        }
+
+        // FRONTEND //
+        stage('FRONTEND CODE TEST') {
+            steps {
+                dir("${env.WORKSPACE}/frontend") {
+                    sh "npm run test"
+                }
+            }
+            post {
+                success {
+                    echo "FRONTEND CODE TEST SUCCESS"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#00FF00',
+                        message: """ 
+                        FRONTEND CODE TEST SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+                failure {
+                    echo "FRONTEND CODE TEST FAILED"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#FF0000',
+                        message: """
+                        FRONTEND CODE TEST FAILED
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+            }
+        }
+
+        stage('FRONTEND CODE BUILD') {
+            steps {
+                dir("${env.WORKSPACE}/frontend") {
+                    sh "npm run build"
+                }
+            }
+            post {
+                success {
+                    echo "FRONTEND BUILD SUCCESS"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#00FF00',
+                        message: """ 
+                        FRONTEND BUILD SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )                    
+                }
+                failure {
+                    echo "FRONTEND BUILD FAILED"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#FF0000',
+                        message: """
+                        FRONTEND BUILD FAILED
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )                    
+                }
+            }
+        }
+
+        stage('DEPLOY FRONTEND') {
+            steps {
+                dir("${env.WORKSPACE}/frontend") { 
+                    sh "aws s3 sync ./build s3://${env.MAIN_BUCKET_NAME}"  // sync vs cp
+                }
+            }
+            post {
+                success {
+                    echo "FRONTEND CODE DEPLOYED SUCCESSFULLY"
+                    //sh "aws cloudfront create-invalidation --distribution-id ${DISTRIBUTION_ID} --paths '/*'" // cloudfront distribution ID로 변환 & slack API 추가.
+                    slackSend (
+                        channel: '#heungbot_pipeline', 
+                        color: '#00FF00',
+                        message: """
+                        FRONTEND DEPLOY SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+                failure {
+                    echo "FRONTEND CODE DEPLOYMENT FAILED"
+                }
+            }
+        }
+
+
+        // BACKEND //
+
+        stage('BACKEND CODE TEST') {
+            steps {
+                dir("${env.WORKSPACE}/backend") {
+                    sh "npm run test"
+                }
+            }
+            post {
+                success {
+                    echo "BACKEND CODE TEST SUCCESS"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#00FF00',
+                        message: """ 
+                        BACKEND CODE TEST SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )                    
+                }
+                failure {
+                    echo "BACKEND CODE TEST FAILED"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#FF0000',
+                        message: """
+                        BACKEND CODE TEST FAILED
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )                    
+                }
+            }
+        }
+
+
+        stage('BACKEND IMAGE BUILD') {
+            steps {
+                dir("${env.WORKSPACE}/backend") {
+                    sh "docker build -t ${BACKEND_IMAGE_NAME}:${BUILD_NUMBER} ."
+                }
+            }
+            post {
+                success {
+                    echo "BACKEND BUILD SUCCESS"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#00FF00',
+                        message: """ 
+                        BACKEND IMAGE BUILD SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )                    
+                }
+                failure {
+                    echo "BACKEND BUILD FAILED"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#FF0000',
+                        message: """
+                        BACKEND IMAGE BUILD FAILED
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )                       
+                }
+            }
+        }
+
+        stage('PUSH BACKEND IMAGE') {
+            steps {
+                echo 'Tag and push the backend image to ECR'
+                dir("${env.WORKSPACE}/backend") {
+                    sh"""
+                    docker tag ${BACKEND_IMAGE_NAME}:${env.BUILD_NUMBER} ${env.ECR_REPOSITORY_URL}:${BACKEND_IMAGE_NAME}_${env.BUILD_NUMBER} &&
+                    docker push ${env.ECR_REPOSITORY_URL}:${BACKEND_IMAGE_NAME}_${env.BUILD_NUMBER} &&
+                    docker rmi ${env.ECR_REPOSITORY_URL}:${BACKEND_IMAGE_NAME}_${env.BUILD_NUMBER}
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "BACKEND IMAGE PUSHE SUCCESS"
+                }
+                failure {
+                    echo "BACKEND IMAGE PUSH FAILED"
+                }
+            }
+        }
+
+        stage ('PLAN ABOUT ECS') { 
+            steps {
+                dir("${env.WORKSPACE}/terraform_module") {
+                    sh """
+                    terraform plan --target=module.heungbot-backend-ecs \
+                    -var "BUILD_NUMBER=${env.BUILD_NUMBER}" \
+                    -var "BACKEND_IMAGE=${env.ECR_REPOSITORY_URL}:${BACKEND_IMAGE_NAME}_${env.BUILD_NUMBER}" \
+                    -var "JENKINS_WORKSPACE_PATH=${env.WORKSPACE}"
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "TERRAFORM PLAN ABOUT ECS IS SUCCESS"
+                    slackSend(
+                        channel: '#heungbot_pipeline',
+                        color: '#00FF00',
+                        message: """ 
+                        ECS TERRAFORM PLAN SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+                failure {
+                    echo "TERRAFORM PLAN ABOUT ECS IS FAILED"
+                    slackSend (
+                        channel: '#heungbot_pipeline', 
+                        color: '#FF0000', 
+                        message: """
+                        ECS TERRAFORM PLAN FAILED
+                        CHECK JENKINS LOGS
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+            }
+        }
+
+        stage ('APPLY ABOUT ECS') {
+            steps {
+                dir("${env.WORKSPACE}/terraform_module") {
+                    sh """
+                    terraform apply -auto-approve --target=module.backend-ecs \
+                    -var "BUILD_NUMBER=${env.BUILD_NUMBER}" \
+                    -var "BACKEND_IMAGE=${env.ECR_REPOSITORY_URL}:${BACKEND_IMAGE_NAME}_${env.BUILD_NUMBER}" \
+                    -var "JENKINS_WORKSPACE_PATH=${env.WORKSPACE}"
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "TERRAFORM APPLY ABOUT ECS IS SUCCESS"
+                    slackSend (
+                        channel: '#heungbot_pipeline', 
+                        color: '#00FF00',
+                        message: """
+                        ECS TERRAFORM APPLY SUCCESS
+                        Job: ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+                failure {
+                    echo "TERRAFORM APPLY ABOUT ECS IS FAILED"
+                    slackSend (
+                        channel: '#heungbot_pipeline', 
+                        color: '#FF0000', 
+                        message: """
+                        ECS TERRAFORM APPLY FAILED
+                        CHECK JENKINS LOGS
+                        BUILD FAIL: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]
+                        """
+                    )
+                }
+            }
+        }
+        stage ('CLEAN UP') {
+            steps {
+                cleanWs()
+            }
+        }
+    }
+}

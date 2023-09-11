@@ -2,13 +2,14 @@
 
 ## 📄 프로젝트 설명
 
-프로젝트 명 : 기간 한정 온라인 쇼핑몰 서비스 구축
+프로젝트 명 : 기간 한정 이벤트 쇼핑몰 서비스 구축
 
 프로젝트 인원 : 1명
 
-프로젝트 기간 : 2023.02 ~ 2023.04
+프로젝트 기간 : 2023.06 ~ 2023.07
 
-프로젝트 소개 : 1달간 이벤트성으로 운영되는 가상의 쇼핑몰을 클라이언트로 설정하여 상황과 요구사항을 정의하고, 이에 맞는 AWS Service(Cloudfront, S3, ALB, ECS, ElastiCache, Aurora)를 사용하였습니다. 추가로 이들을 Terraform 모듈로 구성하여 인프라를 코드로 정의하고, Jenkins Pipeline을 통해 배포하는 프로젝트 입니다.
+프로젝트 소개 : 3일동안 이벤트성으로 운영되는 가상의 쇼핑몰 상황을 클라이언트로 설정하여 이에 따른 요구사항을 정의하고 상황에 맞는 AWS Service(Cloudfront, S3, ALB, ECS, ElastiCache, Aurora)를 사용하였습니다.
+또한 이들을 Terraform을 이용하여 저만의 모듈을 만들어 인프라를 코드로 정의하고 Jenkins Pipeline을 통해 Build부터 Deployment까지 자동화 하는 프로젝트 입니다
 
 ***
 
@@ -24,17 +25,15 @@
 
 [05. 아키텍처 세부 구성 소개 ](#-05-핵심-서비스-소개-)
 
-[06. Jenkins Pipeline 실행 및 결과 ](#-06-jenkins-pipeline-실행-및-결과-)
+[06. Jenkins Pipeline 실행 및 구현 ](#-06-jenkins-pipeline-실행-및-구현-)
 
 ***
 
 ## [ 01 클라이언트 상황 가정 ] 
 
-* 출근하는 직장인을 서비스 고객으로 삼아, 매주 월요일 08:00 - 08:50 동안 "출근길에 물건이라도 건지자!!" 라는 할인 이벤트 진행
+* 이벤트 기간 동안 하루에 약 20,000명의 유저가 몰릴 것이라 예상 
 
-* 월요일에 이벤트 기간 동안 약 10,000명의 유저가 몰릴 것이라 예상 
-
-* 동일 기간한정 이벤트를 분기마다 서비스 예정
+* 동일 기간한정 이벤트를 주기적으로 서비스 예정
 
 * 기존에 존재하는 물리서버들은 다른 서비스를 운영중이며 전사 데이터를 보관중
 
@@ -48,11 +47,9 @@
 
 * 안정적인 서비스를 위한 부하분산 및 고가용성 확보
 
-* Iac를 통해 아키텍처 재사용성 확보
+* Iac를 통해 아키텍쳐 재사용성 확보 
 
-* 분기마다 서비스되는 이벤트이므로, 추가 구성에 대한 확장성 확보 요망
-
-* 빠른 개발 사이클을 위한 CI/CD pipeline 구축
+* 하루마다 판매하는 물건의 종류가 바뀌므로, 이를 즉각 반영하는 CI/CD pipeline 구축
 
 * DB의 고가용성 확보와 퍼포먼스 개선
 
@@ -64,7 +61,7 @@
 
 ## [ 03 Jenkins Pipeline 다이어그램 ]
 
-<img width="1395" alt="스크린샷 2023-09-11 오후 1 25 30" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/d48b71ad-7b2e-4449-830c-b85d5cdfe7f2">
+<img width="1087" alt="3tier_pipeline_flow" src="https://github.com/heungbot/3tier-terraform-pipeline/assets/97264115/8e0c0018-1676-4b25-aa9c-c1d2bf0260c3">
    
 
 * 크게 Init, Frontend 그리고 Backend로 나누어 각각의 세부 stage를 정의함.
@@ -243,29 +240,10 @@
 
 ***
 
-## [ 06 Jenkins Pipeline 실행 및 결과 ]
-
-### Pipeline For Cloud Infra
-
-<img width="999" alt="INFRA_PIPELINE_RESULT" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/3590a54c-3ffa-471f-af0d-f265b5476d56">
-
-### Pipeline For Dev
-
-<img width="1045" alt="DEV_PIPELINE_RESULT" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/49e51183-ea2d-486a-8dee-2d89fd786d0f">
+## [ 06 Jenkins Pipeline 실행 및 구현 ]
+<img width="1205" alt="3tier_pipeline_result" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline/assets/97264115/bea3062a-9ac0-4c93-bc22-dbf29c80b406">
 
 * 모든 Stage가 정상적으로 수행되었으며, 생성된 서비스들은 AWS Console에서 확인 가능
-
-### SLACK ALARM
-
-#### Infra Pipeline Slack Alarm
-
-<img width="543" alt="INFRA_SLACK_ALARM" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/ff1ac83d-4530-4395-8de1-3a8caaaba283">
-
-#### Dev Pipeline Slack Alarm
-
-<img width="291" alt="DEV_SLACK_ALARM" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/a5a668a9-ed96-4f53-9ad5-2876c9a5cdbc">
-
-* 중요 stage에 대한 알람이 정상적으로 slack channel에 전송되었음
 
 
 ### 1. Network
@@ -318,4 +296,6 @@
 
 * 모든 terraform module이 정상적으로 배포되었음
 
+<img width="948" alt="스크린샷 2023-08-11 오후 12 27 48" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline/assets/97264115/57d85f0c-c2f2-48df-a927-52a035acf95d">
 
+* 중요 stage에 대한 알람이 정상적으로 slack channel에 전송되었음
