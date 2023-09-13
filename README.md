@@ -240,9 +240,15 @@
 ***
 
 ## [ 06 Jenkins Pipeline 실행 및 구현 ]
-<img width="1205" alt="3tier_pipeline_result" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline/assets/97264115/bea3062a-9ac0-4c93-bc22-dbf29c80b406">
+  
+<img width="999" alt="INFRA_PIPELINE_RESULT" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/3590a54c-3ffa-471f-af0d-f265b5476d56">
 
-* 모든 Stage가 정상적으로 수행되었으며, 생성된 서비스들은 AWS Console에서 확인 가능
+* Infra Pipeline 실행 결과
+
+  
+<img width="1045" alt="DEV_PIPELINE_RESULT" src="https://github.com/heungbot/Event_Shopping_Mall_Project/assets/97264115/a707b3b8-4d93-4e58-a871-bfe670378676">
+
+* Dev Pipeline 실행 결과
 
 
 ### 1. Network
