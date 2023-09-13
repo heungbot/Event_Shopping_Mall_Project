@@ -301,6 +301,12 @@
 
 * 모든 terraform module이 정상적으로 배포되었음
 
-<img width="948" alt="스크린샷 2023-08-11 오후 12 27 48" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline/assets/97264115/57d85f0c-c2f2-48df-a927-52a035acf95d">
 
-* 중요 stage에 대한 알람이 정상적으로 slack channel에 전송되었음
+### Slack Channel Alarm
+
+* System & Dev Pipeline의 중요 Stage 마다 Slack Channel에 알람이 가는 것을 확인.
+  
+<img width="543" alt="INFRA_SLACK_ALARM" src="https://github.com/heungbot/Event_Shopping_Mall_Project/assets/97264115/fee8f9a2-fc55-454f-a814-b0c17ba2dde1">
+
+<img width="291" alt="DEV_SLACK_ALARM" src="https://github.com/heungbot/Event_Shopping_Mall_Project/assets/97264115/f196a271-f951-4003-a106-07346c1e3489">
+
