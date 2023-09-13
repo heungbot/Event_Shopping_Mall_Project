@@ -61,8 +61,6 @@
 
 ## [ 03 Jenkins Pipeline 다이어그램 ]
 
-<img width="1087" alt="3tier_pipeline_flow" src="https://github.com/heungbot/3tier-terraform-pipeline/assets/97264115/8e0c0018-1676-4b25-aa9c-c1d2bf0260c3">
-
 <img width="1395" alt="스크린샷 2023-09-11 오후 1 25 30" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/d48b71ad-7b2e-4449-830c-b85d5cdfe7f2">
 
 * 크게 Init, Frontend 그리고 Backend로 나누어 각각의 세부 stage를 정의함.
