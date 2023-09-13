@@ -6,10 +6,9 @@
 
 프로젝트 인원 : 1명
 
-프로젝트 기간 : 2023.06 ~ 2023.07
+프로젝트 기간 : 2023.02 ~ 2023.04
 
-프로젝트 소개 : 3일동안 이벤트성으로 운영되는 가상의 쇼핑몰 상황을 클라이언트로 설정하여 이에 따른 요구사항을 정의하고 상황에 맞는 AWS Service(Cloudfront, S3, ALB, ECS, ElastiCache, Aurora)를 사용하였습니다.
-또한 이들을 Terraform을 이용하여 저만의 모듈을 만들어 인프라를 코드로 정의하고 Jenkins Pipeline을 통해 Build부터 Deployment까지 자동화 하는 프로젝트 입니다
+프로젝트 소개 : 1달간 이벤트성으로 운영되는 가상의 쇼핑몰을 클라이언트로 설정하여 상황과 요구사항을 정의하고, 이에 맞는 AWS Service(CloudFront, S3, ALB, ECS, ElastiCache, Aurora)를 사용하였습니다. 추가로 이들을 Terraform 모듈로 구성하여 인프라를 코드로 정의하고, Jenkins Pipeline을 통해 배포하는 프로젝트입니다.
 
 ***
 
