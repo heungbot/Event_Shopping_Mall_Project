@@ -66,6 +66,8 @@
 
 <img width="1395" alt="스크린샷 2023-09-11 오후 1 25 30" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/d48b71ad-7b2e-4449-830c-b85d5cdfe7f2">
 
+* System과 Dev의 Pipelien을 분할함.
+* System Pipelien에서 개발과정에 필요한 모든 인프라를 사전 배포 후, Dev Pipeline 실행
 
 ### 01. Init 
 
