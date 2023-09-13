@@ -306,7 +306,5 @@
 
 * System & Dev Pipeline의 중요 Stage 마다 Slack Channel에 알람이 가는 것을 확인.
   
-<img width="543" alt="INFRA_SLACK_ALARM" src="https://github.com/heungbot/Event_Shopping_Mall_Project/assets/97264115/fee8f9a2-fc55-454f-a814-b0c17ba2dde1">
-
-<img width="291" alt="DEV_SLACK_ALARM" src="https://github.com/heungbot/Event_Shopping_Mall_Project/assets/97264115/f196a271-f951-4003-a106-07346c1e3489">
+<img width="638" alt="스크린샷 2023-09-13 오후 7 27 25" src="https://github.com/heungbot/Event_Shopping_Mall_Project/assets/97264115/970b117f-c421-4604-b629-7c1c3baa5d3d">
 
