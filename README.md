@@ -243,12 +243,12 @@
   
 <img width="999" alt="INFRA_PIPELINE_RESULT" src="https://github.com/heungbot/Event_Shopping_Mall_Pipeline_Project/assets/97264115/3590a54c-3ffa-471f-af0d-f265b5476d56">
 
-* Infra Pipeline 실행 결과
+* System Pipeline 실행 결과, 약 32.1분 소요
 
   
 <img width="1045" alt="DEV_PIPELINE_RESULT" src="https://github.com/heungbot/Event_Shopping_Mall_Project/assets/97264115/a707b3b8-4d93-4e58-a871-bfe670378676">
 
-* Dev Pipeline 실행 결과
+* Dev Pipeline 실행 결과, 약 11.7분 소요
 
 
 ### 1. Network
